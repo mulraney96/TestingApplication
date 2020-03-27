@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".getRollActivity">
+
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/graphRollGameVec"
+        android:layout_width="420dp"
+        android:layout_height="329dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/text_roll_value"
+        android:layout_width="179dp"
+        android:layout_height="68dp"
+        android:layout_marginTop="200dp"
+        android:layout_marginBottom="24dp"
+        android:text="Angle calculted = 0"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/graphRollGameVec"
+        app:layout_constraintVertical_bias="1.0" />
+
+    <TextView
+        android:id="@+id/text_roll_value2"
+        android:layout_width="179dp"
+        android:layout_height="68dp"
+        android:layout_marginTop="200dp"
+        android:layout_marginBottom="24dp"
+        android:text="Angle calculted = 0"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/graphRollGameVec"
+        app:layout_constraintVertical_bias="1.0" />
+
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/graphRollVec"
+        android:layout_width="415dp"
+        android:layout_height="292dp"
+        app:layout_constraintBottom_toTopOf="@+id/text_roll_value"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/graphRollGameVec" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
