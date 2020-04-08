@@ -25,40 +25,59 @@ import java.io.FileOutputStream
 
 @TargetApi(Build.VERSION_CODES.CUPCAKE)
 class getRollActivity : AppCompatActivity(), SensorEventListener {
-
     private lateinit var sensorManager: SensorManager
 
-    private var rollValues = arrayListOf<Entry>()
-    private var rollValuesVec = arrayListOf<Entry>()
-
-    var graphRoll: LineChart? = null
-    var graphRollVec: LineChart? = null
-
-    var counterGameVec: Int = 0
-    var counterVec: Int = 0
+    private var MagAccOrientationValues = arrayListOf<Float>()
+    private var dtListMagAcc = arrayListOf<Float>()
+    var angleValuesMagAcc: ArrayList<Float> = arrayListOf()
     var counterMagAcc: Int = 0
-    var xAxis: Float = 0.0f
-    var xAxisVec: Float = 0.0f
     var xAxisMagAcc: Float = 0.0f
-    var timestampGameVec: Long = 0L
-    var timestampVec: Long = 0L
+    var eventTime: Long = 0L
     var timestampMagAcc: Long = 0L
-    var angleValues: ArrayList<Float> = arrayListOf()
-    var angleValuesVec: ArrayList<Float> = arrayListOf()
-
     var Mag_Readings: FloatArray? = floatArrayOf(0.0f, 0.0f, 0.0f)
     var Acc_Readings: FloatArray? = floatArrayOf(0.0f, 0.0f,0.0f ,0.0f)
 
+    var counterGameVec: Int = 0
+    var xAxisGameVec: Float = 0.0f
+    var timestampGameVec: Long = 0L
+    var angleValues: ArrayList<Float> = arrayListOf()
     private var gameVecOrientationValues = arrayListOf<Float>()
     private var dtListGameVec = arrayListOf<Float>()
+
+    var counterVec: Int = 0
+    var xAxisVec: Float = 0.0f
+    var timestampVec: Long = 0L
+    var angleValuesVec: ArrayList<Float> = arrayListOf()
     private var VecOrientationValues = arrayListOf<Float>()
     private var dtListVec = arrayListOf<Float>()
-    private var MagAccOrientationValues = arrayListOf<Float>()
-    private var dtListMagAcc = arrayListOf<Float>()
 
     private var averageCounter = -1
-    private var sensorType = 0
 
+    fun reset(){
+        MagAccOrientationValues.clear()
+        dtListMagAcc.clear()
+        angleValuesMagAcc.clear()
+        eventTime=0L
+        counterMagAcc=0
+        xAxisMagAcc = 0.0f
+        timestampMagAcc=0L
+        Mag_Readings = floatArrayOf(0.0f, 0.0f, 0.0f)
+        Acc_Readings = floatArrayOf(0.0f, 0.0f, 0.0f)
+
+        counterGameVec=0
+        xAxisGameVec=0.0f
+        timestampGameVec=0L
+        angleValues.clear()
+        gameVecOrientationValues.clear()
+        dtListGameVec.clear()
+
+        counterVec=0
+        xAxisVec=0.0f
+        timestampVec=0L
+        angleValuesVec.clear()
+        VecOrientationValues.clear()
+        dtListVec.clear()
+    }
 
 
     @SuppressLint("SourceLockedOrientationActivity")
@@ -69,10 +88,8 @@ class getRollActivity : AppCompatActivity(), SensorEventListener {
         setContentView(R.layout.activity_get_roll)
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
-        graphRoll = findViewById(R.id.graphRollGameVec)
-        graphRollVec = findViewById(R.id.graphRollVec)
-
     }
+
 
     override fun onResume() {
         super.onResume()
@@ -86,6 +103,17 @@ class getRollActivity : AppCompatActivity(), SensorEventListener {
             sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR),
             SensorManager.SENSOR_DELAY_NORMAL
         )
+        sensorManager.registerListener(
+            this,
+            sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
+        sensorManager.registerListener(
+            this,
+            sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
+        reset()
     }
 
     override fun onPause() {
@@ -109,32 +137,34 @@ class getRollActivity : AppCompatActivity(), SensorEventListener {
                 SensorManager.getRotationMatrixFromVector(rotationMatrix, event!!.values)
                 SensorManager.getOrientation(rotationMatrix, orientation)
 
-                xAxis += ((event.timestamp - timestampGameVec) * (1.0f / 1000000000.0f))
-                var roll = (orientation[0]*57.2958f) // convert to degrees
-                val graphEntry = Entry(xAxis, roll)
-                rollValues.add(graphEntry)
-                gameVecOrientationValues.add(roll)
-                dtListGameVec.add(xAxis)
+                xAxisGameVec += ((event.timestamp - timestampGameVec) * (1.0f / 1000000000.0f))
+                var roll = (orientation[2]*57.2958f) // convert to degrees
+                var pitch = (orientation[1]*57.2958f)
+                var yaw = (orientation[0]*57.2958f)
 
-                val RollDataSet = LineDataSet(rollValues, "Game Rotation Vector Roll")
-                RollDataSet.setDrawCircles(false)
-                RollDataSet.setColor(Color.BLUE)
-                val accLineData = LineData(RollDataSet)
-                graphRoll!!.setData(accLineData)
+
+                gameVecOrientationValues.add(roll)
+                gameVecOrientationValues.add(pitch)
+                gameVecOrientationValues.add(yaw)
+                dtListGameVec.add(xAxisGameVec)
+
+
                 if (counterGameVec > 150) {
-                    angleValues.add(roll)
+                    angleValues.add(yaw)
                 }
-                if (counterGameVec >= 250) {
+                if (counterGameVec == 250) {
                     calculateAverage(angleValues, 1)
                     averageCounter++
-                    saveList(gameVecOrientationValues, dtListGameVec, "GamVec_yawwroll302.csv")
+                    saveList(gameVecOrientationValues, dtListGameVec, "GameVec${AngleValues.getFileName()}")
+                    sensorManager.unregisterListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR))
+
                 }
             }
-
-            graphRoll!!.invalidate()
             counterGameVec++
             timestampGameVec = event.timestamp
         }
+
+
 
         if(event.sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
             var rotationMatrix: FloatArray =
@@ -146,35 +176,82 @@ class getRollActivity : AppCompatActivity(), SensorEventListener {
                 SensorManager.getOrientation(rotationMatrix, orientation)
 
                 xAxisVec += ((event.timestamp - timestampVec)*(1.0f/1000000000.0f))
-                var roll = (orientation[0]*57.2958f) // convert to degrees
-                val graphEntry = Entry(xAxisVec, roll)
-                rollValuesVec.add(graphEntry)
+                var roll = (orientation[2]*57.2958f) // convert to degrees
+                var pitch = (orientation[1]*57.2958f)
+                var yaw = (orientation[0]*57.2958f)
+
                 VecOrientationValues.add(roll)
+                VecOrientationValues.add(pitch)
+                VecOrientationValues.add(yaw)
                 dtListVec.add(xAxisVec)
 
-                val RollDataSet = LineDataSet(rollValuesVec, "Rotation Vector - Roll")
-                RollDataSet.setDrawCircles(false)
-                RollDataSet.setColor(Color.RED)
-                val accLineData = LineData(RollDataSet)
-                graphRollVec!!.setData(accLineData)
                 if(counterVec>150){
-                    angleValuesVec.add(roll)
+                    angleValuesVec.add(yaw)
                 }
-                if(counterVec>=250){
+                if(counterVec==250){
                     calculateAverage(angleValuesVec, 2)
                     averageCounter++
-                    saveList(VecOrientationValues, dtListVec, "VecA_yaww_roll302.csv")
+                    saveList(VecOrientationValues, dtListVec, "RotationVec${AngleValues.getFileName()}")
+                    sensorManager.unregisterListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR))
+
                 }
             }
-
-            graphRollVec!!.invalidate()
             counterVec++
             timestampVec = event.timestamp
         }
 
 
+
+        if(event.sensor.type == Sensor.TYPE_ACCELEROMETER){
+            Acc_Readings = event.values.clone()
+            eventTime = event.timestamp
+            calculateMagAccOrientation(Mag_Readings, Acc_Readings, eventTime)
+            timestampMagAcc = eventTime
+        }
+        if(event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD){
+            Mag_Readings = event.values.clone()
+            eventTime = event.timestamp
+            calculateMagAccOrientation(Mag_Readings, Acc_Readings, eventTime)
+            timestampMagAcc = eventTime
+        }
+
+
     }
 
+    fun calculateMagAccOrientation(MagR: FloatArray?, AccR: FloatArray?, eventTime: Long){
+        if(MagR != null && AccR != null){
+            if(timestampMagAcc!=0L) {
+                var rotationMatrix: FloatArray =
+                    floatArrayOf(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f)
+                var orientation: FloatArray = floatArrayOf(0.0f, 0.0f, 0.0f)
+
+                SensorManager.getRotationMatrix(rotationMatrix, null, AccR, MagR)
+                SensorManager.getOrientation(rotationMatrix, orientation)
+                xAxisMagAcc += ((eventTime - timestampMagAcc) * (1.0f / 1000000000.0f))
+
+                var roll = (orientation[2] * 57.2958f) // convert to degrees
+                var pitch = (orientation[1] * 57.2958f)
+                var yaw = (orientation[0] * 57.2958f)
+
+                MagAccOrientationValues.add(roll)
+                MagAccOrientationValues.add(pitch)
+                MagAccOrientationValues.add(yaw)
+                dtListMagAcc.add(xAxisMagAcc)
+
+                if(counterMagAcc>400){
+                    angleValuesMagAcc.add(yaw)
+                }
+                if(counterMagAcc==500){
+                    calculateAverage(angleValuesMagAcc, 3)
+                    this.averageCounter++
+                    saveList(MagAccOrientationValues, dtListMagAcc, "MagAcc${AngleValues.getFileName()}")
+                    sensorManager.unregisterListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER))
+                    sensorManager.unregisterListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD))
+                }
+            }
+        }
+        counterMagAcc++
+    }
 
     fun calculateAverage(arr: ArrayList<Float>, type: Int){
         val size = arr.size-1
@@ -192,20 +269,23 @@ class getRollActivity : AppCompatActivity(), SensorEventListener {
         if(type==2){
             text_roll_value2.text = "Vec Average= ${AngleValues.getRollOffset()}"
         }
+        if(type==3){
+            text_roll_value3.text = "MagAcc Average = ${AngleValues.getRollOffset()}"
+        }
     }
 
     fun saveList(list: ArrayList<Float>, dtList: ArrayList<Float>, fileName: String){
 
         var entry = ""
-        var size = list.size-1
+        var size = (list.size/3)-1
         for(i in 0..size){
-            entry = entry.plus("${dtList[i]},${list[i]}\n")
+            entry = entry.plus("${dtList[i]},${list[i*3]},${list[i*3+1]},${list[i*3+2]}\n")
         }
         try{
             var out: FileOutputStream = openFileOutput("$fileName", Context.MODE_APPEND)
             out.write(entry.toByteArray())
 
-            Toast.makeText(this, "Saved to $filesDir/$fileName", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Saved to $filesDir/$fileName", Toast.LENGTH_SHORT).show()
             out.close()
             Log.i("Counter", "$averageCounter")
             Log.i("File", "Written")
@@ -214,7 +294,7 @@ class getRollActivity : AppCompatActivity(), SensorEventListener {
             e.printStackTrace()
         }
         finally{
-            if(averageCounter>=2){
+            if(averageCounter>=3){
                 sensorManager.unregisterListener(this)
             }
         }
